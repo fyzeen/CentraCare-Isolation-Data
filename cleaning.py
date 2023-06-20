@@ -41,6 +41,36 @@ if __name__ == '__main__':
                 df.loc[(df['ID'] == subj), row_vals[index]] = value
                 df.loc[(df['ID'] == subj), row_exts[index]] = ext_value 
 
-    out = df.drop(["FLO_MEAS_ID", "Last Date", "DISP_NAME", "MEAS_VALUE", "MEAS_VALUE_EXTERNAL"], axis=1).drop_duplicates()
+    df = df.drop(["FLO_MEAS_ID", "Last Date", "DISP_NAME", "MEAS_VALUE", "MEAS_VALUE_EXTERNAL"], axis=1).drop_duplicates()
 
-    out.to_csv("CentraCareSocialIsolation_CLEANED.csv")
+    # Define value to score mappings for each value
+    Groups_YN_ValToScore = {1:1, 2:0, 98:0}
+    Marriage_ValToScore = {3:1, 4:0, 5:0, 6:0, 7:0, 8:1, 98:0}
+    Religious_ValToScore = {1:0, 2:0, 3:1, 98:0}
+    GetTogether_ValToScore = {1:0, 2:0, 3:0, 4:1, 5:1, 98:0}
+    Phone_ValToScore = {1:0, 2:0, 3:0, 4:1, 5:1, 98:0}
+    NumGroupMeetings_ValToScore = {1:0, 2:0, 3:1, 98:0, None:0}
+
+    # Compute scores based on values
+    df["Groups_YN_Score"] = df["Groups_YN_Val"].map(Groups_YN_ValToScore)
+    df["Marriage_Score"] = df["Marriage_Val"].map(Marriage_ValToScore)
+    df['Religious_Score'] = df['Religious_Val'].map(Religious_ValToScore)
+    df['GetTogether_Score'] = df['GetTogether_Val'].map(GetTogether_ValToScore)
+    df['Phone_Score'] = df['Phone_Val'].map(Phone_ValToScore)
+    df["NumGroupMeetings_Score"] = df["NumGroupMeetings_Val"].map(NumGroupMeetings_ValToScore)
+
+    # Compute Risk Score (4+ = Socially Integrated; 3 = Moderately Integrated; 2 = Moderately Isolated; 1 or 0 = Socially Isolated)
+    df["SocialIntegrationScore"] = df["Groups_YN_Score"] + df["Marriage_Score"] + df['Religious_Score'] + df['GetTogether_Score']+ df['Phone_Score'] + df["NumGroupMeetings_Score"]
+    df["noMarriageSocialIntegrationScore"] = df["Groups_YN_Score"] + df['Religious_Score'] + df['GetTogether_Score']+ df['Phone_Score'] + df["NumGroupMeetings_Score"]
+
+
+    # Use a cutoff of TWO (2) as the score under which a patient is classified as "isolated"
+    df["Isolation_YN"] = (df["SocialIntegrationScore"] < 2).astype(int)
+    df["noMarriageIsolation_YN"] = (df["SocialIntegrationScore"] < 2).astype(int)
+
+    # Keeping only patients >= 18 years and < 100 (because we have only (maximum of) 10 individuals per age > 100)
+    df = df[df['Age'] >= 18]
+    df = df[df['Age'] < 100]
+    
+    # Write csv
+    df.to_csv("CentraCareIsolation_CLEANED.csv")
