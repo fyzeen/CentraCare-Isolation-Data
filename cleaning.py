@@ -72,5 +72,13 @@ if __name__ == '__main__':
     df = df[df['Age'] >= 18]
     df = df[df['Age'] < 100]
     
+    # Add income information from ACS (median household income by zipcode)
+    ACS_path = "/Users/fyzeen/FyzeenLocal/GitHub/CentraCare-Isolation-Data/data/ACS_Data/ACSST5Y2021.S1903-Data.csv"
+    ACS = pd.read_csv(ACS_path)
+    ACS['NAME(zip)'] = ACS['NAME(zip)'].str[6:].astype('float64')
+    df["MedianZipIncome"] = df["Zipcode"].map(ACS.set_index("NAME(zip)")["S1903_C03_001E(median_indome)"])
+    df["MedianZipIncome"] = df["MedianZipIncome"].replace('-', np.nan)
+    df["MedianZipIncome"] = df["MedianZipIncome"].astype('float64')
+
     # Write csv
     df.to_csv("CentraCareIsolation_CLEANED.csv")
