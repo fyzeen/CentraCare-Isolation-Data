@@ -177,3 +177,4 @@ xz=5.2.5=h1a28f6b_1
 zeromq=4.3.4=hc377ac9_0
 zlib=1.2.12=h5a0b063_3
 zstd=1.5.2=h8574219_0
+scikit-learn
