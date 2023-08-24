@@ -76,12 +76,78 @@ if __name__ == '__main__':
     df = df[df['Age'] < 100]
     
     # Add income information from ACS (median household income by zipcode)
-    ACS_path = "/Users/fyzeen/FyzeenLocal/GitHub/CentraCare-Isolation-Data/data/ACS_Data/ACSST5Y2021.S1903-Data.csv"
-    ACS = pd.read_csv(ACS_path)
-    ACS['NAME(zip)'] = ACS['NAME(zip)'].str[6:].astype('float64')
-    df["MedianZipIncome"] = df["Zipcode"].map(ACS.set_index("NAME(zip)")["S1903_C03_001E(median_indome)"])
+    ACS1903_path = "/Users/fyzeen/FyzeenLocal/GitHub/CentraCare-Isolation-Data/data/ACS_Data/ACSST5Y2021_S1903/ACSST5Y2021.S1903-Data.csv"
+    ACS1903 = pd.read_csv(ACS1903_path)
+    ACS1903['NAME(zip)'] = ACS1903['NAME(zip)'].str[6:].astype('float64')
+    df["MedianZipIncome"] = df["Zipcode"].map(ACS1903.set_index("NAME(zip)")["S1903_C03_001E(median_indome)"])
     df["MedianZipIncome"] = df["MedianZipIncome"].replace('-', np.nan)
     df["MedianZipIncome"] = df["MedianZipIncome"].astype('float64')
+
+    # Add education information
+    ACS1501_path = "/Users/fyzeen/FyzeenLocal/GitHub/CentraCare-Isolation-Data/data/ACS_Data/ACSST5Y2021_S1501/ACSST5Y2021.S1501-Data.csv"
+    ACS1501 = pd.read_csv(ACS1501_path)
+    ACS1501['Zip'] = ACS1501['NAME'].str[6:]
+    ACS1501['Zip'] = pd.to_numeric(ACS1501['Zip'], errors='coerce')
+
+    df["ZipPercentBachelors+"] = df["Zipcode"].map(ACS1501.set_index("Zip")["S1501_C02_015E"])
+    df["ZipPercentBachelors+"] = pd.to_numeric(df['ZipPercentBachelors+'], errors='coerce')
+
+    df["ZipPercentHighSchool+"] = df["Zipcode"].map(ACS1501.set_index("Zip")["S1501_C02_014E"])
+    df["ZipPercentHighSchool+"] = pd.to_numeric(df['ZipPercentHighSchool+'], errors='coerce')
+
+    # Add langauge informationm
+    ACS1603_path = "/Users/fyzeen/FyzeenLocal/GitHub/CentraCare-Isolation-Data/data/ACS_Data/ACSST5Y2021_S1603/ACSST5Y2021.S1603-Data.csv"
+    ACS1603 = pd.read_csv(ACS1603_path)
+    ACS1603['Zip'] = ACS1603['NAME'].str[6:]
+    ACS1603['Zip'] = pd.to_numeric(ACS1603['Zip'], errors='coerce')
+    ACS1603['S1603_C02_001E'] = pd.to_numeric(ACS1603['S1603_C02_001E'], errors='coerce')
+    ACS1603["S1603_C04_001E"] = pd.to_numeric(ACS1603['S1603_C04_001E'], errors='coerce')
+    ACS1603["S1603_C01_001E"] = pd.to_numeric(ACS1603['S1603_C01_001E'], errors='coerce')
+
+    ACS1603['ZipPercentEnglishAtHome'] = ACS1603['S1603_C02_001E'] / ACS1603["S1603_C01_001E"]
+    ACS1603['ZipPercentNonEnglishAtHome'] = ACS1603['S1603_C04_001E'] / ACS1603["S1603_C01_001E"]
+
+    df["ZipPercentEnglishAtHome"] = df["Zipcode"].map(ACS1603.set_index("Zip")["ZipPercentEnglishAtHome"])
+    df["ZipPercentNonEnglishAtHome"] = df["Zipcode"].map(ACS1603.set_index("Zip")["ZipPercentNonEnglishAtHome"])
+
+    # Add poverty and food stamps information
+    ACS2201_path = "/Users/fyzeen/FyzeenLocal/GitHub/CentraCare-Isolation-Data/data/ACS_Data/ACSST5Y2021_S2201/ACSST5Y2021.S2201-Data.csv"
+    ACS2201 = pd.read_csv(ACS2201_path)
+    ACS2201['Zip'] = ACS2201['NAME'].str[6:]
+    ACS2201['Zip'] = pd.to_numeric(ACS2201['Zip'], errors='coerce')
+
+    ACS2201['S2201_C02_021E'] = pd.to_numeric(ACS2201['S2201_C02_021E'], errors='coerce')
+    ACS2201['S2201_C04_001E'] = pd.to_numeric(ACS2201['S2201_C04_001E'], errors='coerce')
+
+    df["ZipPercentUnderPoverty"] = df["Zipcode"].map(ACS2201.set_index("Zip")["S2201_C02_021E"])
+    df["ZipPercentOnFoodStamps"] = df["Zipcode"].map(ACS2201.set_index("Zip")["S2201_C04_001E"])
+
+    # Add insurance information
+    ACS2701_path = "/Users/fyzeen/FyzeenLocal/GitHub/CentraCare-Isolation-Data/data/ACS_Data/ACSST5Y2021_S2701/ACSST5Y2021.S2701-Data.csv"
+    ACS2701 = pd.read_csv(ACS2701_path)
+    ACS2701['Zip'] = ACS2701['NAME'].str[6:]
+    ACS2701['Zip'] = pd.to_numeric(ACS2701['Zip'], errors='coerce')
+
+    ACS2701['S2701_C03_001E'] = pd.to_numeric(ACS2701['S2701_C03_001E'], errors='coerce')
+
+    df["ZipPercentInsured"] = df["Zipcode"].map(ACS2701.set_index("Zip")["S2701_C03_001E"])
+
+    # Add population density information
+    land_area_byZip = pd.read_csv("/Users/fyzeen/FyzeenLocal/GitHub/CentraCare-Isolation-Data/data/ACS_Data/geocorr2022_LandAreaByZip.csv").iloc[2:]
+    land_area_byZip['zcta'] = land_area_byZip['zcta'].astype(float)
+    land_area_byZip['LandSQMI'] = land_area_byZip['LandSQMI'].astype(float)
+
+    land_area_byZip["NumHouseholds"] = land_area_byZip["zcta"].map(ACS2201.set_index("Zip")["S2201_C01_001E"])
+    land_area_byZip["Population"] = land_area_byZip["zcta"].map(ACS2701.set_index("Zip")["S2701_C01_001E"])
+
+    land_area_byZip['NumHouseholds'] = land_area_byZip['NumHouseholds'].astype(float)
+    land_area_byZip['Population'] = land_area_byZip['Population'].astype(float)
+
+    land_area_byZip['NumHouseholdsPerSQMi'] = land_area_byZip['NumHouseholds'] / land_area_byZip['LandSQMI']
+    land_area_byZip['NumPplPerSQMi'] = land_area_byZip['Population'] / land_area_byZip['LandSQMI']
+
+    df["ZipHouseholdsPerSQMi"] = df["Zipcode"].map(land_area_byZip.set_index("zcta")["NumHouseholdsPerSQMi"])
+    df["ZipPplPerSQMi"] = df["Zipcode"].map(land_area_byZip.set_index("zcta")["NumPplPerSQMi"])
 
     # Write csv
     df.to_csv("CentraCareIsolation_CLEANED.csv")
