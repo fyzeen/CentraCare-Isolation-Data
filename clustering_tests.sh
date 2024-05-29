@@ -6,6 +6,7 @@
 #SBATCH --mem=75GB
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=1
+#SBATCH -w node20
 
 module load python
 source activate drysdale_replication
